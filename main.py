@@ -91,3 +91,16 @@ class WSLDjangoService(win32serviceutil.ServiceFramework):
             except Exception as e:
                 logging.error(f"Error in service loop: {e}")
             time.sleep(10)
+
+if __name__ == '__main__':
+    logging.info("DEBUG MODE: Starting loop")
+    while True:
+        try:
+            start_wsl()
+            if not is_django_running() or not is_port_open(DJANGO_PORT):
+                start_django()
+            else:
+                logging.info("Django is running normally.")
+        except Exception as e:
+            logging.error(f"Error in debug loop: {e}")
+        time.sleep(10)
