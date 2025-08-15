@@ -11,7 +11,7 @@ import logging
 
 # === CONFIG ===
 DJANGO_PORT = 8000
-DJANGO_COMMAND = r"python C:\Users\Ali\Desktop\TectoTrack\services\tecto-metadata-api\manage.py runserver 0.0.0.0:8000"
+DJANGO_COMMAND = r"C:\Users\Ali\Desktop\TectoTrack\services\tecto-metadata-api\.venv\Scripts\python.exe manage.py runserver 0.0.0.0:8000"
 DJANGO_PROCESS_NAME = "manage.py"  # for process check
 LOG_FILE = r".\wsl_django_service.log"
 
