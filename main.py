@@ -1,3 +1,5 @@
+import threading
+
 import win32serviceutil
 import win32service
 import win32event
@@ -70,23 +72,22 @@ class WSLDjangoService(win32serviceutil.ServiceFramework):
     def SvcDoRun(self):
         logging.info("Service started.")
         servicemanager.LogInfoMsg("WSLDjangoService started.")
+
+        # Run the main loop in a thread
+        t = threading.Thread(target=self.main_loop)
+        t.start()
+
+        # Wait for stop signal
+        win32event.WaitForSingleObject(self.hWaitStop, win32event.INFINITE)
+
+    def main_loop(self):
         while self.running:
             try:
-                # Keep WSL alive
                 start_wsl()
-
-                # Ensure Django is running
                 if not is_django_running() or not is_port_open(DJANGO_PORT):
                     start_django()
                 else:
                     logging.info("Django is running normally.")
-
             except Exception as e:
                 logging.error(f"Error in service loop: {e}")
-
-            time.sleep(10)  # Check every 10 seconds
-
-        logging.info("Service stopped.")
-
-if __name__ == '__main__':
-    win32serviceutil.HandleCommandLine(WSLDjangoService)
+            time.sleep(10)
