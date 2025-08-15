@@ -13,7 +13,13 @@ import logging
 
 # === CONFIG ===
 DJANGO_PORT = 8000
-DJANGO_COMMAND = r"C:\Users\Ali\Desktop\TectoTrack\services\tecto-metadata-api\.venv\Scripts\python.exe C:\Users\Ali\Desktop\TectoTrack\services\tecto-metadata-api\manage.py runserver 0.0.0.0:8000"
+
+DJANGO_PYTHON = r"C:\Users\Ali\Desktop\TectoTrack\services\tecto-metadata-api\.venv\Scripts\python.exe"
+DJANGO_MANAGE = r"C:\Users\Ali\Desktop\TectoTrack\services\tecto-metadata-api\manage.py"
+DJANGO_WORKDIR = r"C:\Users\Ali\Desktop\TectoTrack\services\tecto-metadata-api"
+
+DJANGO_COMMAND = [DJANGO_PYTHON, DJANGO_MANAGE, "runserver", f"0.0.0.0:{DJANGO_PORT}"]
+
 DJANGO_PROCESS_NAME = "manage.py"  # for process check
 LOG_FILE = r".\wsl_django_service.log"
 
@@ -50,7 +56,7 @@ def is_django_running():
 def start_django():
     """Start Django server."""
     logging.warning("Django is not running. Starting Django...")
-    subprocess.Popen(DJANGO_COMMAND, shell=True, cwd=os.path.dirname(DJANGO_COMMAND))
+    subprocess.Popen(DJANGO_COMMAND, cwd=DJANGO_WORKDIR)
     logging.info("Django start command executed.")
 
 class WSLDjangoService(win32serviceutil.ServiceFramework):
