@@ -7,39 +7,49 @@ import time
 import socket
 import psutil
 import os
+import logging
 
-
+# === CONFIG ===
 DJANGO_PORT = 8000
 DJANGO_COMMAND = r"python C:\path\to\manage.py runserver 0.0.0.0:8000"
 DJANGO_PROCESS_NAME = "manage.py"  # for process check
+LOG_FILE = r"C:\path\to\wsl_django_service.log"
 
+# === Logging Setup ===
+logging.basicConfig(
+    filename=LOG_FILE,
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
 
 def is_port_open(port):
     """Check if a port is listening (Django running)."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(("127.0.0.1", port)) == 0
 
-
 def start_wsl():
     """Run a harmless command to ensure WSL is loaded."""
+    logging.info("Checking WSL status...")
     subprocess.run(["wsl", "echo", "WSL is up"], shell=True)
-
+    logging.info("WSL ping sent.")
 
 def is_django_running():
     """Check if Django process is running by process name."""
     for proc in psutil.process_iter(['name', 'cmdline']):
         try:
-            if "python" in proc.info['name'].lower() and DJANGO_PROCESS_NAME in " ".join(proc.info['cmdline']):
-                return True
+            if proc.info['name'] and "python" in proc.info['name'].lower():
+                if proc.info['cmdline'] and DJANGO_PROCESS_NAME in " ".join(proc.info['cmdline']):
+                    return True
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             continue
     return False
 
-
 def start_django():
     """Start Django server."""
+    logging.warning("Django is not running. Starting Django...")
     subprocess.Popen(DJANGO_COMMAND, shell=True, cwd=os.path.dirname(DJANGO_COMMAND))
-
+    logging.info("Django start command executed.")
 
 class WSLDjangoService(win32serviceutil.ServiceFramework):
     _svc_name_ = "WSLDjangoService"
@@ -52,11 +62,13 @@ class WSLDjangoService(win32serviceutil.ServiceFramework):
         self.running = True
 
     def SvcStop(self):
+        logging.info("Service stop requested.")
         self.running = False
         self.ReportServiceStatus(win32service.SERVICE_STOP_PENDING)
         win32event.SetEvent(self.hWaitStop)
 
     def SvcDoRun(self):
+        logging.info("Service started.")
         servicemanager.LogInfoMsg("WSLDjangoService started.")
         while self.running:
             try:
@@ -66,12 +78,15 @@ class WSLDjangoService(win32serviceutil.ServiceFramework):
                 # Ensure Django is running
                 if not is_django_running() or not is_port_open(DJANGO_PORT):
                     start_django()
+                else:
+                    logging.info("Django is running normally.")
 
             except Exception as e:
-                servicemanager.LogErrorMsg(str(e))
+                logging.error(f"Error in service loop: {e}")
 
             time.sleep(10)  # Check every 10 seconds
 
+        logging.info("Service stopped.")
 
 if __name__ == '__main__':
     win32serviceutil.HandleCommandLine(WSLDjangoService)
