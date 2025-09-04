@@ -1,28 +1,20 @@
-import os
-import sys
-import time
-import socket
 import logging
+import os
+import socket
 import subprocess
+import time
+from pathlib import Path
 
 import psutil
+from decouple import config
 
 # ====== CONFIG - change these to match your environment ======
-DJANGO_PORT = 8000
+DJANGO_PORT = config('DJANGO_PORT', cast=int, default='8000')
+DJANGO_PYTHON = Path(config('DJANGO_PYTHON'))
+DJANGO_MANAGE = Path(config('DJANGO_MANAGE'))
+DJANGO_WORKDIR = Path(config('DJANGO_WORKDIR'))
+LOG_FILE = Path(config('LOG_FILE'))
 
-DJANGO_PYTHON = r"D:\Documents\imp\Morphotect\tecto-metadata-api\venv\Scripts\python.exe"
-DJANGO_MANAGE = r"D:\Documents\imp\Morphotect\tecto-metadata-api\manage.py"
-DJANGO_WORKDIR = r"D:\Documents\imp\Morphotect\tecto-metadata-api"
-
-# Updated log file to a system-writable location to avoid permissions issues
-LOG_FILE = r"C:\Temp\wsl_django_service.log"
-
-# Alternative config (commented out)
-# DJANGO_PYTHON = r"C:\Users\Ali\Desktop\TectoTrack\services\tecto-metadata-api\.venv\Scripts\python.exe"
-# DJANGO_MANAGE = r"C:\Users\Ali\Desktop\TectoTrack\services\tecto-metadata-api\manage.py"
-# DJANGO_WORKDIR = r"C:\Users\Ali\Desktop\TectoTrack\services\tecto-metadata-api"
-#
-# LOG_FILE = r"C:\Temp\wsl_django_service.log"  # Updated here too if using this config
 LOG_DIR = os.path.dirname(LOG_FILE)
 # =============================================================
 
@@ -36,6 +28,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 
+
 def is_port_open(port, host="127.0.0.1", timeout=1.0):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.settimeout(timeout)
@@ -43,6 +36,7 @@ def is_port_open(port, host="127.0.0.1", timeout=1.0):
             return s.connect_ex((host, port)) == 0
         except Exception:
             return False
+
 
 def start_wsl():
     """Quick harmless WSL call to ensure WSL is up (non-blocking)."""
@@ -53,6 +47,7 @@ def start_wsl():
         logging.info("WSL ping sent.")
     except Exception as e:
         logging.error(f"WSL ping error: {e}")
+
 
 def is_django_running_by_process():
     """Return True if a python process is running manage.py (best-effort)."""
@@ -66,6 +61,7 @@ def is_django_running_by_process():
             continue
     return False
 
+
 def start_django():
     """Start Django using the venv Python. Non-blocking."""
     logging.warning("Django not running — starting Django...")
@@ -77,6 +73,7 @@ def start_django():
         logging.info("Django start command executed.")
     except Exception as e:
         logging.error(f"Failed to start Django: {e}")
+
 
 def monitor_loop():
     logging.info("Monitor loop started.")
@@ -107,6 +104,7 @@ def monitor_loop():
     except Exception as e:
         logging.exception(f"Monitor loop crashed: {e}")
     logging.info("Monitor loop exiting.")
+
 
 if __name__ == "__main__":
     logging.info("Starting monitor script...")
